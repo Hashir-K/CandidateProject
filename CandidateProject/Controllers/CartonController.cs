@@ -123,12 +123,6 @@ namespace CandidateProject.Controllers
             {
                 return HttpNotFound();
             }
-            //can't delete if carton has details
-            else if (carton.CartonDetails.Count > 0)
-            {
-                TempData["ErrorMessage"] = "You cannot delete a carton that has items.";
-                return View(carton);
-            }
             return View(carton);
         }
 
@@ -137,7 +131,14 @@ namespace CandidateProject.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            Carton carton = db.Cartons.Find(id);
+            Carton carton = db.Cartons
+                    .Include(c => c.CartonDetails)
+                    .Where(c => c.Id == id)
+                    .SingleOrDefault();
+
+            var details = carton.CartonDetails;
+            db.CartonDetails.RemoveRange(details);
+            db.SaveChanges();
 
             db.Cartons.Remove(carton);
             db.SaveChanges();
@@ -293,7 +294,7 @@ namespace CandidateProject.Controllers
             db.CartonDetails.RemoveRange(carton.CartonDetails);
             db.SaveChanges();
 
-            return RedirectToAction("CartonDetails");
+            return RedirectToAction("Index");
         }
     }
 }
